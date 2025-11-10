@@ -26,11 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
           participantsHTML = `
             <div class="participants-section">
               <strong>Participants:</strong>
-              <ul class="participants-list">
+              <ul class="participants-list no-bullets">
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span></li>`
+                      `<li><span class="participant-email">${email}</span> <span class="delete-participant" title="Remove participant" data-activity="${name}" data-email="${email}">&#128465;</span></li>`
                   )
                   .join("")}
               </ul>
@@ -103,6 +103,41 @@ document.addEventListener("DOMContentLoaded", () => {
       messageDiv.className = "error";
       messageDiv.classList.remove("hidden");
       console.error("Error signing up:", error);
+    }
+  });
+
+  // Add event delegation for delete icons
+  activitiesList.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('delete-participant')) {
+      const activityName = e.target.getAttribute('data-activity');
+      const email = e.target.getAttribute('data-email');
+      if (!activityName || !email) return;
+      // Call API to unregister participant
+      try {
+        const res = await fetch(`/activities/${encodeURIComponent(activityName)}/unregister`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          messageDiv.textContent = data.detail || 'Failed to remove participant';
+          messageDiv.className = 'error';
+        } else {
+          messageDiv.textContent = 'Participant removed successfully';
+          messageDiv.className = 'success';
+          // Reload activities
+          fetchActivities();
+        }
+        messageDiv.classList.remove('hidden');
+        setTimeout(() => {
+          messageDiv.classList.add('hidden');
+        }, 4000);
+      } catch (err) {
+        messageDiv.textContent = 'Error removing participant';
+        messageDiv.className = 'error';
+        messageDiv.classList.remove('hidden');
+      }
     }
   });
 
